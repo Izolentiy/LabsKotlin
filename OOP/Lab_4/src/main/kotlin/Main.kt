@@ -10,6 +10,8 @@ fun main(args: Array<String>) {
         accessStraight { data -> print("$data  ") }
         print("\nTree elements (reversed): ")
         accessReversed { data -> print("$data  ") }
+        insert(3)
+        print("\nTree elements (broad): ")
+        accessBroad { data -> print("$data  ") }
     }
-
 }

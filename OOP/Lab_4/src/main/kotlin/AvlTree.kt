@@ -1,4 +1,3 @@
-import kotlin.math.abs
 import kotlin.math.max
 
 class AvlTree<T> {
@@ -7,32 +6,20 @@ class AvlTree<T> {
         var left: Node<T>? = null,
         var right: Node<T>? = null,
     ) {
-        val key get() = data.hashCode()
+        val key: Int get() = data.hashCode()
         val min: Node<T> get() = left?.min ?: this
         val max: Node<T> get() = right?.max ?: this
-        val isLeaf: Boolean
-            get() = left == null && right == null
-        val height: Int
-            get() {
-                val lHeight = left?.height ?: -1
-                val rHeight = right?.height ?: -1
-                return 1 + max(lHeight, rHeight)
-            }
-
-        fun delta(other: Node<T>): UInt {
-            return when {
-                key >= 0 && other.key <= 0 -> key.toUInt() + (-other.key).toUInt()
-                key <= 0 && other.key >= 0 -> (-key).toUInt() + other.key.toUInt()
-                else -> abs(key - other.key).toUInt()
-            }
-        }
+        val isLeaf: Boolean get() = left == null && right == null
+        var height: Int = 0
+        val lHeight: Int get() = left?.height ?: -1
+        val rHeight: Int get() = right?.height ?: -1
 
         fun link(toLink: T): Node<T> {
             when {
                 key > toLink.key -> left = left?.link(toLink) ?: Node(toLink)
                 key < toLink.key -> right = right?.link(toLink) ?: Node(toLink)
             }
-            return this
+            return this.balanced()
         }
 
         fun erase(toErase: T): Node<T>? {
@@ -44,24 +31,48 @@ class AvlTree<T> {
                     else if (left == null) {
                         data = right!!.min.data
                         right = right?.erase(data)
-                    } else if (right == null) {
+                    } else { // right == null or both != null
                         data = left!!.max.data
                         left = left?.erase(data)
-                    } else when {
-                        delta(right!!.min) < delta(left!!.max) -> {
-                            data = right!!.min.data
-                            right = right?.erase(data)
-                        }
-
-                        delta(right!!.min) >= delta(left!!.max) -> {
-                            data = left!!.max.data
-                            left = left?.erase(data)
-                        }
                     }
-
                 }
             }
-            return this
+            return this.balanced()
+        }
+
+        fun balanced(): Node<T> {
+            var newRoot: Node<T> = this
+            when (lHeight - rHeight) { // balance
+                2 -> {
+                    if (left!!.lHeight < left!!.rHeight) {
+                        newRoot = left!!.right!!
+                        left!!.right = null
+                        newRoot.min.left = this.left
+                        height = newRoot.height
+                    } else {
+                        newRoot = left!!
+                    }
+                    newRoot.max.right = this
+                    this.left!!.height--
+                    this.left = null
+                }
+
+                -2 -> {
+                    if (right!!.rHeight < right!!.lHeight) {
+                        newRoot = right!!.left!!
+                        right!!.left = null
+                        newRoot.max.right = this.right
+                        height = newRoot.height
+                    } else {
+                        newRoot = right!!
+                    }
+                    newRoot.min.left = this
+                    this.right!!.height--
+                    this.right = null
+                }
+            }
+            with(newRoot) { height = max(lHeight, rHeight) + 1 }
+            return newRoot
         }
 
         fun accessSymmetric(action: (T) -> Unit) {
@@ -80,6 +91,17 @@ class AvlTree<T> {
             left?.accessReversed(action)
             right?.accessReversed(action)
             action(data)
+        }
+
+        fun accessBroad(action: (T) -> Unit) {
+            val nodes = ArrayDeque<Node<T>>()
+            nodes.add(this)
+            while (nodes.isNotEmpty()) {
+                val node = nodes.first()
+                node.left?.let { nodes.addLast(it) }
+                node.right?.let { nodes.addLast(it) }
+                nodes.removeFirst().also { action(it.data) }
+            }
         }
     }
 
@@ -111,7 +133,9 @@ class AvlTree<T> {
         root?.accessReversed(action)
     }
 
-
+    fun accessBroad(action: (T) -> Unit) {
+        root?.accessBroad(action)
+    }
 }
 
 val Any?.key: Int get() = this.hashCode()
