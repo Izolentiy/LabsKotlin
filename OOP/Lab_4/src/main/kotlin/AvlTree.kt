@@ -41,38 +41,51 @@ class AvlTree<T> {
         }
 
         fun balanced(): Node<T> {
-            var newRoot: Node<T> = this
+            var newRoot: Node<T>
+            val oldRoot = this
             when (lHeight - rHeight) { // balance
-                2 -> {
-                    if (left!!.lHeight < left!!.rHeight) {
-                        newRoot = left!!.right!!
-                        left!!.right = null
-                        newRoot.min.left = this.left
-                        height = newRoot.height
+                2 -> with(oldRoot.left!!) {
+                    if (lHeight < rHeight) {
+                        newRoot = right!!
+                        oldRoot.left = right!!.right
+                        right = right!!.left
+                        newRoot.left = this
+                        newRoot.right = oldRoot
                     } else {
-                        newRoot = left!!
+                        newRoot = this
+                        oldRoot.left = right
+                        right = oldRoot
                     }
-                    newRoot.max.right = this
-                    this.left!!.height--
-                    this.left = null
+                    updateHeight()
                 }
 
-                -2 -> {
-                    if (right!!.rHeight < right!!.lHeight) {
-                        newRoot = right!!.left!!
-                        right!!.left = null
-                        newRoot.max.right = this.right
-                        height = newRoot.height
+                -2 -> with(oldRoot.right!!) {
+                    if (rHeight < lHeight) {
+                        newRoot = left!!
+                        oldRoot.right = left!!.left
+                        left = left!!.left
+                        newRoot.right = this
+                        newRoot.left = oldRoot
                     } else {
-                        newRoot = right!!
+                        newRoot = this
+                        oldRoot.right = left
+                        left = oldRoot
                     }
-                    newRoot.min.left = this
-                    this.right!!.height--
-                    this.right = null
+                    updateHeight()
+                }
+
+                else -> {
+                    updateHeight()
+                    return this
                 }
             }
-            with(newRoot) { height = max(lHeight, rHeight) + 1 }
+            oldRoot.updateHeight()
+            newRoot.updateHeight()
             return newRoot
+        }
+
+        fun updateHeight() {
+            height = max(lHeight, rHeight) + 1
         }
 
         fun accessSymmetric(action: (T) -> Unit) {
