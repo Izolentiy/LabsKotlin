@@ -5,12 +5,12 @@ class AvlTree<T> {
         var data: T,
         var left: Node<T>? = null,
         var right: Node<T>? = null,
+        var height: Int = 0,
+        val key: Int = data.hashCode()
     ) {
-        val key: Int get() = data.hashCode()
         val min: Node<T> get() = left?.min ?: this
         val max: Node<T> get() = right?.max ?: this
         val isLeaf: Boolean get() = left == null && right == null
-        var height: Int = 0
         val lHeight: Int get() = left?.height ?: -1
         val rHeight: Int get() = right?.height ?: -1
 
@@ -41,42 +41,51 @@ class AvlTree<T> {
         }
 
         fun balanced(): Node<T> {
+            when (lHeight - rHeight) { // balance
+                2 -> return leftBalanced()
+                -2 -> return rightBalanced()
+            }
+            updateHeight()
+            return this
+        }
+
+        fun leftBalanced(): Node<T> {
+            val oldRoot = this
+            val newRoot: Node<T>
+            with (oldRoot.left!!) {
+                if (lHeight < rHeight) {
+                    newRoot = right!!
+                    oldRoot.left = right!!.right
+                    right = right!!.left
+                    newRoot.left = this
+                    newRoot.right = oldRoot
+                    updateHeight()
+                } else {
+                    newRoot = this
+                    oldRoot.left = right
+                    right = oldRoot
+                }
+            }
+            oldRoot.updateHeight()
+            newRoot.updateHeight()
+            return newRoot
+        }
+
+        fun rightBalanced(): Node<T> {
             var newRoot: Node<T>
             val oldRoot = this
-            when (lHeight - rHeight) { // balance
-                2 -> with(oldRoot.left!!) {
-                    if (lHeight < rHeight) {
-                        newRoot = right!!
-                        oldRoot.left = right!!.right
-                        right = right!!.left
-                        newRoot.left = this
-                        newRoot.right = oldRoot
-                    } else {
-                        newRoot = this
-                        oldRoot.left = right
-                        right = oldRoot
-                    }
+            with(oldRoot.right!!) {
+                if (rHeight < lHeight) {
+                    newRoot = left!!
+                    oldRoot.right = left!!.left
+                    left = left!!.left
+                    newRoot.right = this
+                    newRoot.left = oldRoot
                     updateHeight()
-                }
-
-                -2 -> with(oldRoot.right!!) {
-                    if (rHeight < lHeight) {
-                        newRoot = left!!
-                        oldRoot.right = left!!.left
-                        left = left!!.left
-                        newRoot.right = this
-                        newRoot.left = oldRoot
-                    } else {
-                        newRoot = this
-                        oldRoot.right = left
-                        left = oldRoot
-                    }
-                    updateHeight()
-                }
-
-                else -> {
-                    updateHeight()
-                    return this
+                } else {
+                    newRoot = this
+                    oldRoot.right = left
+                    left = oldRoot
                 }
             }
             oldRoot.updateHeight()
